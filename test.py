@@ -1,12 +1,24 @@
 import cv2
 import os
 
+# 모자이크 적용 함수
+def apply_mosaic(frame, x, y, w, h, scale=10):
+    # 모자이크 적용할 영역 추출
+    roi = frame[y:y+h, x:x+w]
+    
+    # 모자이크 처리
+    roi_small = cv2.resize(roi, (w // scale, h // scale))
+    roi_mosaic = cv2.resize(roi_small, (w, h), interpolation=cv2.INTER_NEAREST)
+    
+    # 모자이크 적용
+    frame[y:y+h, x:x+w] = roi_mosaic
+
+    return frame
+
 # 동영상 파일이 있는 폴더 경로
 video_folder_path = r"C:\Users\chosh\Desktop\VideoInput"
-
-# 폴더 내의 모든 파일에 대해 반복
 for filename in os.listdir(video_folder_path):
-    # 파일 경로 생성
+    # 비디오 경로 불러오기
     video_path = os.path.join(video_folder_path, filename)
 
     # 동영상 파일인지 확인
@@ -26,9 +38,6 @@ for filename in os.listdir(video_folder_path):
 
     print(f"Processing video: {filename}")
 
-    # Face 창 생성
-    cv2.namedWindow('Face', cv2.WINDOW_NORMAL)
-
     # 동영상 파일로부터 프레임을 읽어옴
     while True:
         ret, frame = cap.read()
@@ -43,18 +52,12 @@ for filename in os.listdir(video_folder_path):
         # 얼굴 검출
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
-        # Video 창에 인식한 얼굴에 사각형 박스 표시
+        # 얼굴에 모자이크 적용
         for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            frame = apply_mosaic(frame, x, y, w, h)
 
         # Video 창에 표시
         cv2.imshow('Video', frame)
-
-        # Face 창에 인식된 얼굴만 표시
-        face_frame = frame.copy()
-        for (x, y, w, h) in faces:
-            face_frame = cv2.rectangle(face_frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        cv2.imshow('Face', face_frame)
 
         # 'q' 키를 누르면 종료
         if cv2.waitKey(1) & 0xFF == ord('q'):
