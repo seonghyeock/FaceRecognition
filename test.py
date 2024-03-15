@@ -1,22 +1,20 @@
 import cv2
 import os
 
-# 모자이크 적용 함수
-def apply_mosaic(frame, x, y, w, h, scale=10):
-    # 모자이크 적용할 영역 추출
-    roi = frame[y:y+h, x:x+w]
-    
-    # 모자이크 처리
-    roi_small = cv2.resize(roi, (w // scale, h // scale))
-    roi_mosaic = cv2.resize(roi_small, (w, h), interpolation=cv2.INTER_NEAREST)
-    
-    # 모자이크 적용
-    frame[y:y+h, x:x+w] = roi_mosaic
-
-    return frame
-
 # 동영상 파일이 있는 폴더 경로
 video_folder_path = r"C:\Users\chosh\Desktop\VideoInput"
+# 대체할 이미지 경로
+replacement_image_path = r"C:\Users\chosh\Desktop\EutamiasThunder.jpg"
+
+# 대체할 이미지 로드
+replacement_image = cv2.imread(replacement_image_path)
+if replacement_image is None:
+    print("Error: Failed to load replacement face image.")
+    exit()
+
+# 얼굴 검출기 초기화
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
 for filename in os.listdir(video_folder_path):
     # 비디오 경로 불러오기
     video_path = os.path.join(video_folder_path, filename)
@@ -24,9 +22,6 @@ for filename in os.listdir(video_folder_path):
     # 동영상 파일인지 확인
     if not os.path.isfile(video_path) or not video_path.lower().endswith(('.avi', '.mp4', '.mkv', '.mov')):
         continue
-
-    # 얼굴 검출기 초기화
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     # 동영상 파일 열기
     cap = cv2.VideoCapture(video_path)
@@ -52,9 +47,12 @@ for filename in os.listdir(video_folder_path):
         # 얼굴 검출
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
-        # 얼굴에 모자이크 적용
+        # 얼굴에 사진 적용
         for (x, y, w, h) in faces:
-            frame = apply_mosaic(frame, x, y, w, h)
+            # 대체할 얼굴 이미지를 해당 얼굴 영역 크기에 맞게 조정
+            replacement_face_resized = cv2.resize(replacement_image, (w, h), interpolation=cv2.INTER_LINEAR)
+            # 프레임에 대체할 얼굴 이미지 적용
+            frame[y:y+h, x:x+w] = replacement_face_resized
 
         # Video 창에 표시
         cv2.imshow('Video', frame)
